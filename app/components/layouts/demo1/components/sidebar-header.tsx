@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BoltIcon, ChevronFirst } from 'lucide-react';
+import { ChevronFirst } from 'lucide-react';
 import { toAbsoluteUrl } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/providers/settings-provider';

@@ -22,8 +22,7 @@ const Logo = () => {
   }, []);
 
   // Offset each rect's color cycle for a lively effect
-  const getClass = (offset: number) => TAILWIND_FUCHSIA_CLASSES[(step + offset) % TAILWIND_FUCHSIA_CLASSES.length];
-
+  
   return (
     <motion.div
       initial="hidden"

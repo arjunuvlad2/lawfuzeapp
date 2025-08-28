@@ -208,7 +208,7 @@ export default function SignInPage() {
                 body: JSON.stringify({ id_token: idToken }),
               });
               const data: { access_token?: string; detail?: string; message?: string } =
-                await resp.json().catch(() => ({} as any));
+                await resp.json().catch(() => ({} as Record<string, unknown>));
               if (!resp.ok || !data?.access_token) throw new Error(data?.detail || data?.message || 'Google sign-in failed');
               localStorage.setItem('lf_token', data.access_token);
               const ok = await loginWithGoogleIdToken(idToken);
@@ -233,7 +233,7 @@ export default function SignInPage() {
                 body: JSON.stringify({ code }),
               });
               const data: { access_token?: string; detail?: string; message?: string } =
-                await resp.json().catch(() => ({} as any));
+                await resp.json().catch(() => ({} as Record<string, unknown>));
               if (!resp.ok || !data?.access_token) throw new Error(data?.detail || data?.message || 'Google popup sign-in failed');
               localStorage.setItem('lf_token', data.access_token);
               router.replace('/'); router.refresh();

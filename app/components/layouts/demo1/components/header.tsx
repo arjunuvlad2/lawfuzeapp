@@ -31,10 +31,8 @@ import {
 import { Container } from '@/components/common/container';
 import { StoreClientTopbar } from '@/app/(protected)/store-client/components/common/topbar';
 import { Breadcrumb } from './breadcrumb';
-import { MegaMenu } from './mega-menu';
 import { MegaMenuMobile } from './mega-menu-mobile';
 import { SidebarMenu } from './sidebar-menu';
-import Logo from '@/app/components/brand/Logo';
 import { motion } from 'framer-motion';
 
 export function Header() {

@@ -3,38 +3,60 @@ import { NextResponse } from 'next/server';
 
 export const runtime = 'edge'; // fast & stream-friendly
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+const apiKey = process.env.OPENAI_API_KEY ?? '';
+if (!apiKey) {
+  // Note: this will not throw during import on edge, but it's useful for local/dev.
+  // The POST handler below still checks before using the client.
+  // eslint-disable-next-line no-console
+  console.warn('OPENAI_API_KEY is not set');
+}
 
-export async function POST(req: Request) {
+const client = new OpenAI({ apiKey });
+
+type ChatBody = {
+  messages: unknown;
+  model?: string;
+};
+
+export async function POST(req: Request): Promise<Response> {
   try {
-    const { messages, model } = await req.json();
+    const parsed = (await req.json().catch(() => null)) as ChatBody | null;
 
-    // Basic input guard
-    if (!Array.isArray(messages)) {
-      return NextResponse.json({ error: 'messages must be an array' }, { status: 400 });
+    if (!parsed || !Array.isArray(parsed.messages)) {
+      return NextResponse.json(
+        { error: 'messages must be an array' },
+        { status: 400 }
+      );
+    }
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'OPENAI_API_KEY is not configured on the server' },
+        { status: 500 }
+      );
     }
 
     // Create a streaming completion
     const stream = await client.chat.completions.create({
-      model: model ?? 'gpt-5', // fast + capable; change if you like
+      model: parsed.model ?? 'gpt-5',
       temperature: 0.2,
-      messages,
+      messages: parsed.messages as unknown[], // already validated as array
       stream: true,
     });
 
     const encoder = new TextEncoder();
 
-    const readable = new ReadableStream({
+    const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
           for await (const part of stream) {
             const delta = part.choices?.[0]?.delta?.content;
             if (delta) controller.enqueue(encoder.encode(delta));
           }
-        } catch (err) {
-          controller.error(err);
+        } catch (err: unknown) {
+          controller.error(
+            err instanceof Error ? err : new Error('Stream error')
+          );
         } finally {
           controller.close();
         }
@@ -47,7 +69,8 @@ export async function POST(req: Request) {
         'Cache-Control': 'no-cache, no-transform',
       },
     });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? 'Unexpected error' }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unexpected error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

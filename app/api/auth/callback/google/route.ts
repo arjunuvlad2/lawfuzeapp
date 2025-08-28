@@ -10,11 +10,19 @@ export const runtime = "nodejs";
 
 type GoogleProxyBody = { id_token: string };
 
-function jsonSafeParse<T = any>(text: string): T | Record<string, never> {
+function jsonSafeParse<T = unknown>(text: string): T | Record<string, never> {
   try { return JSON.parse(text) as T; } catch { return {}; }
 }
 
-export async function POST(req: Request) {
+function pickString(obj: unknown, key: string): string | undefined {
+  if (obj && typeof obj === "object" && key in (obj as Record<string, unknown>)) {
+    const v = (obj as Record<string, unknown>)[key];
+    return typeof v === "string" ? v : undefined;
+  }
+  return undefined;
+}
+
+export async function POST(req: Request): Promise<NextResponse> {
   try {
     if (!req.headers.get("content-type")?.includes("application/json")) {
       return NextResponse.json({ detail: "Expected application/json" }, { status: 415 });
@@ -37,15 +45,18 @@ export async function POST(req: Request) {
     });
 
     const text = await upstream.text();
-    const data = jsonSafeParse(text);
+    const data = jsonSafeParse<Record<string, unknown>>(text);
 
     if (!upstream.ok) {
       const detail =
-        (data as any)?.detail ||
-        (data as any)?.message ||
-        (upstream.status === 401 ? "Invalid Google token" :
-         upstream.status === 403 ? "Access denied" :
-         "Google sign-in failed");
+        pickString(data, "detail") ??
+        pickString(data, "message") ??
+        (upstream.status === 401
+          ? "Invalid Google token"
+          : upstream.status === 403
+          ? "Access denied"
+          : "Google sign-in failed");
+
       return NextResponse.json({ detail }, { status: upstream.status });
     }
 

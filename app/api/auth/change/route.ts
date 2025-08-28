@@ -12,9 +12,15 @@ import { NextRequest, NextResponse } from "next/server";
  * - The client (browser) must include `Authorization: Bearer <token>` when calling
  *   this adapter (since server routes can't read localStorage).
  */
+
+interface PasswordChangeBody {
+  current_password: string;
+  new_password: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL!;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
     if (!apiBase) {
       return NextResponse.json(
         { message: "NEXT_PUBLIC_API_URL is not set" },
@@ -23,12 +29,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Read JSON body from the client
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return NextResponse.json(
-        { message: "Invalid body" },
-        { status: 400 }
-      );
+    const body = (await req.json().catch(() => null)) as
+      | PasswordChangeBody
+      | null;
+
+    if (
+      !body ||
+      typeof body !== "object" ||
+      typeof body.current_password !== "string" ||
+      typeof body.new_password !== "string"
+    ) {
+      return NextResponse.json({ message: "Invalid body" }, { status: 400 });
     }
 
     // Forward the bearer token exactly as received from the client
@@ -47,12 +58,18 @@ export async function POST(req: NextRequest) {
     });
 
     // Pass FastAPI's response (json + status) through
-    const data = await resp.json().catch(() => ({}));
+    const text = await resp.text();
+    let data: unknown;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text };
+    }
+
     return NextResponse.json(data, { status: resp.status });
-  } catch (e: any) {
-    return NextResponse.json(
-      { message: e?.message ?? "Unexpected error" },
-      { status: 500 }
-    );
+  } catch (e: unknown) {
+    const message =
+      e instanceof Error ? e.message : "Unexpected error while changing password";
+    return NextResponse.json({ message }, { status: 500 });
   }
 }
