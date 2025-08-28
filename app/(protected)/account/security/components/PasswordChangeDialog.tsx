@@ -97,9 +97,10 @@ export function PasswordChangeDialog({ open, onOpenChange }: Props) {
         router.replace('/signin'); // send to sign-in
       }, 1200); // short delay so they see the success message
 
-    } catch (e: any) {
-      setError(e?.message ?? 'Unexpected error');
-    } finally {
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Unexpected error');
+    }
+    finally {
       setSubmitting(false);
     }
   }

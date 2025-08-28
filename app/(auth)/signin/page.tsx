@@ -2,7 +2,7 @@
 
 declare global {
   interface Window {
-    google?: any;
+    google?: typeof google;
   }
 }
 
@@ -29,17 +29,17 @@ import { getSigninSchema, SigninSchemaType } from '../forms/signin-schema';
 let gisInited = false;
 let promptInFlight = false;
 let cancelPrompt: (() => void) | null = null;
-let codeClient: any | null = null;
+let codeClient: google.accounts.oauth2.CodeClient | null = null;
 
-function loadGsi(): Promise<typeof window.google> {
+function loadGsi(): Promise<typeof google> {
   return new Promise((resolve, reject) => {
-    const w = window as any;
+    const w = window as Window & { google?: typeof google };
     if (w.google?.accounts?.id) return resolve(w.google);
     const s = document.createElement('script');
     s.src = 'https://accounts.google.com/gsi/client';
     s.async = true;
     s.defer = true;
-    s.onload = () => resolve((window as any).google);
+    s.onload = () => resolve((window as Window & { google?: typeof google }).google as typeof google);
     s.onerror = () => reject(new Error('Failed to load Google script'));
     document.head.appendChild(s);
   });
@@ -50,12 +50,12 @@ async function initGsi(
   onCredential: (idToken: string) => void,
   onCodeExchange: (code: string) => Promise<void>,
 ) {
-  const google = await loadGsi();
+  const googleObj = await loadGsi();
   if (!gisInited) {
     // One Tap (ID token)
-    google.accounts.id.initialize({
+    googleObj.accounts.id.initialize({
       client_id: clientId,
-      callback: (resp: any) => {
+      callback: (resp: google.accounts.id.CredentialResponse) => {
         promptInFlight = false;
         cancelPrompt = null;
         if (resp?.credential) onCredential(resp.credential);
@@ -67,23 +67,23 @@ async function initGsi(
     });
 
     // OAuth Code (popup) fallback
-    codeClient = google.accounts.oauth2.initCodeClient({
+    codeClient = googleObj.accounts.oauth2.initCodeClient({
       client_id: clientId,
       scope: 'openid email profile',
       ux_mode: 'popup',
-      callback: async (resp: any) => {
+      callback: async (resp: google.accounts.oauth2.CodeResponse) => {
         if (resp?.code) await onCodeExchange(resp.code);
       },
     });
 
     gisInited = true;
   }
-  return google;
+  return googleObj;
 }
 
 function promptOnce(onIssue?: (msg: string) => void) {
-  const google = (window as any).google;
-  if (!google?.accounts?.id) {
+  const g = window.google;
+  if (!g?.accounts?.id) {
     onIssue?.('Google Sign-In not initialized yet.');
     return;
   }
@@ -95,12 +95,12 @@ function promptOnce(onIssue?: (msg: string) => void) {
   promptInFlight = true;
 
   cancelPrompt = () => {
-    try { google.accounts.id.cancel(); } catch {}
+    try { g.accounts.id.cancel(); } catch { /* noop */ }
     promptInFlight = false;
     cancelPrompt = null;
   };
 
-  google.accounts.id.prompt((n: any) => {
+  g.accounts.id.prompt((n: google.accounts.id.PromptMomentNotification) => {
     if (n.isNotDisplayed?.()) {
       promptInFlight = false;
       cancelPrompt = null;
@@ -134,9 +134,8 @@ function TopActivityBar({ active }: { active: boolean }) {
   return (
     <div
       aria-hidden
-      className={`fixed left-0 top-0 z-[90] h-0.5 w-full overflow-hidden transition-opacity duration-200 ${
-        active ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed left-0 top-0 z-[90] h-0.5 w-full overflow-hidden transition-opacity duration-200 ${active ? 'opacity-100' : 'opacity-0'
+        }`}
     >
       <div className="h-full w-[40%] translate-x-[-100%] animate-[activity_1.4s_ease-in-out_infinite] bg-primary" />
       <style jsx>{`
@@ -208,14 +207,19 @@ export default function SignInPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id_token: idToken }),
               });
-              const data = await resp.json().catch(() => ({}));
+              const data: { access_token?: string; detail?: string; message?: string } =
+                await resp.json().catch(() => ({} as any));
               if (!resp.ok || !data?.access_token) throw new Error(data?.detail || data?.message || 'Google sign-in failed');
               localStorage.setItem('lf_token', data.access_token);
               const ok = await loginWithGoogleIdToken(idToken);
               if (!ok) throw new Error('Google sign-in failed');
               router.replace('/'); router.refresh();
-            } catch (e: any) {
-              setError(e?.message || 'Google sign-in failed');
+            } catch (e: unknown) {
+              if (e instanceof Error) {
+                setError(e.message);
+              } else {
+                setError('Google sign-in failed');
+              }
             } finally {
               setBusy('idle');
             }
@@ -228,12 +232,17 @@ export default function SignInPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code }),
               });
-              const data = await resp.json().catch(() => ({}));
+              const data: { access_token?: string; detail?: string; message?: string } =
+                await resp.json().catch(() => ({} as any));
               if (!resp.ok || !data?.access_token) throw new Error(data?.detail || data?.message || 'Google popup sign-in failed');
               localStorage.setItem('lf_token', data.access_token);
               router.replace('/'); router.refresh();
-            } catch (e: any) {
-              setError(e?.message || 'Google popup sign-in failed');
+            } catch (e: unknown) {
+              if (e instanceof Error) {
+                setError(e.message);
+              } else {
+                setError('Google popup sign-in failed');
+              }
             } finally {
               setBusy('idle');
             }
@@ -241,8 +250,11 @@ export default function SignInPage() {
         );
 
         if (alive) setGsiReady(true);
-      } catch (e: any) {
-        if (alive) setError(e?.message || 'Failed to initialize Google Sign-In');
+      } catch (e: unknown) {
+        if (alive) {
+          if (e instanceof Error) setError(e.message);
+          else setError('Failed to initialize Google Sign-In');
+        }
       }
     })();
     return () => { alive = false; if (cancelPrompt) cancelPrompt(); };
@@ -255,8 +267,9 @@ export default function SignInPage() {
     try {
       const ok = await login(values.email, values.password);
       if (!ok) setError('Invalid credentials. Please try again.');
-    } catch (err: any) {
-      setError(err?.message || 'An unexpected error occurred. Please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+      else setError('An unexpected error occurred. Please try again.');
     } finally {
       setBusy('idle');
     }
@@ -265,8 +278,8 @@ export default function SignInPage() {
   // Google sign-in
   const handleGoogleSignIn = () => {
     setError(null);
-    if (!googleClientId) return setError('Google sign-in not configured.');
-    if (!gsiReady) return setError('Still preparing Google Sign-In. Try again in a moment.');
+    if (!googleClientId) { setError('Google sign-in not configured.'); return; }
+    if (!gsiReady) { setError('Still preparing Google Sign-In. Try again in a moment.'); return; }
     setBusy('google');
     promptOnce((msg) => {
       setBusy('idle');
@@ -329,8 +342,8 @@ export default function SignInPage() {
                 {busy === 'google'
                   ? 'Connecting to Google…'
                   : gsiReady
-                  ? 'Sign in with Google'
-                  : 'Preparing…'}
+                    ? 'Sign in with Google'
+                    : 'Preparing…'}
               </span>
             </Button>
 
@@ -430,11 +443,11 @@ export default function SignInPage() {
                     aria-label={passwordVisible ? 'Hide password' : 'Show password'}
                     disabled={isBusy && busy !== 'google'}
                   >
-                    {passwordVisible ? (
+                    <>{passwordVisible ? (
                       <EyeOff className="text-muted-foreground" />
                     ) : (
                       <Eye className="text-muted-foreground" />
-                    )}
+                    )}</>
                   </Button>
                 </div>
 

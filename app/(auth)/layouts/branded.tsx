@@ -6,7 +6,6 @@ import { toAbsoluteUrl } from '@/lib/helpers';
 import { Card, CardContent } from '@/components/ui/card';
 import Logo from '@/app/components/brand/Logo';
 import { MotionConfig, motion } from 'framer-motion';
-import Mark from '@/app/components/brand/CourtIcon';
 
 const listVariants = {
   hidden: { opacity: 0, y: 6 },

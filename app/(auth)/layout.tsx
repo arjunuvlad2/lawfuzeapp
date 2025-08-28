@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { BrandedLayout } from './layouts/branded';
 import { ClassicLayout } from './layouts/classic';
 
 

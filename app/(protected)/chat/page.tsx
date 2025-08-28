@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUp, Bot, Info, Plus, User } from 'lucide-react';
+import { ArrowUp, Bot, Plus, User } from 'lucide-react';
 
 // --- Types ---
 type Role = 'user' | 'assistant' | 'system';

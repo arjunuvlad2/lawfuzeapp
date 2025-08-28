@@ -3,8 +3,6 @@
 import { RecentUploads } from '@/app/(protected)/public-profile/profiles/default/components/recent-uploads';
 import {
   BasicSettings,
-  CalendarAccounts,
-  CommunityBadges,
   Connections,
   PersonalInfo,
   StartNow,
