@@ -64,13 +64,13 @@ export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
                 href="/account/home/get-started"
                 className="text-sm text-mono hover:text-primary font-semibold"
               >
-                {session?.user.name || ''}
+                {session?.user?.name || ''}
               </Link>
               <Link
                 href="mailto:c.fisher@gmail.com"
                 className="text-xs text-muted-foreground hover:text-primary"
               >
-                {session?.user.email || ''}
+                {session?.user?.email || ''}
               </Link>
             </div>
           </div>
