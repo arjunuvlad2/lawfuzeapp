@@ -19,7 +19,7 @@ const Logo = () => {
       setStep((prev) => (prev + 1) % TAILWIND_FUCHSIA_CLASSES.length);
     }, 1000); // 400ms per step ~2s full cycle
     return () => clearInterval(interval);
-  }, []);
+  }, [step]);
 
   // Offset each rect's color cycle for a lively effect
   

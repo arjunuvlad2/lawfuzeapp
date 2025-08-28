@@ -1,22 +1,35 @@
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 export const runtime = 'edge'; // fast & stream-friendly
 
 const apiKey = process.env.OPENAI_API_KEY ?? '';
-if (!apiKey) {
-  // Note: this will not throw during import on edge, but it's useful for local/dev.
-  // The POST handler below still checks before using the client.
-  // eslint-disable-next-line no-console
-  console.warn('OPENAI_API_KEY is not set');
-}
-
 const client = new OpenAI({ apiKey });
 
 type ChatBody = {
   messages: unknown;
   model?: string;
 };
+
+// Narrow unknown → ChatCompletionMessageParam
+function isChatMessageParam(x: unknown): x is ChatCompletionMessageParam {
+  if (!x || typeof x !== 'object') return false;
+  const o = x as Record<string, unknown>;
+  // minimal structural checks: role + content
+  const role = o.role;
+  const content = o.content;
+  const hasRole =
+    role === 'system' ||
+    role === 'user' ||
+    role === 'assistant' ||
+    role === 'tool' ||
+    role === 'function';
+  const hasContent =
+    typeof content === 'string' ||
+    Array.isArray(content); // SDK also accepts content parts array
+  return !!hasRole && !!hasContent;
+}
 
 export async function POST(req: Request): Promise<Response> {
   try {
@@ -29,6 +42,16 @@ export async function POST(req: Request): Promise<Response> {
       );
     }
 
+    // Validate and narrow each message
+    const msgsUnknown = parsed.messages as unknown[];
+    if (!msgsUnknown.every(isChatMessageParam)) {
+      return NextResponse.json(
+        { error: 'messages contain invalid entries (role/content missing or malformed)' },
+        { status: 400 }
+      );
+    }
+    const messages: ChatCompletionMessageParam[] = msgsUnknown;
+
     if (!apiKey) {
       return NextResponse.json(
         { error: 'OPENAI_API_KEY is not configured on the server' },
@@ -40,7 +63,7 @@ export async function POST(req: Request): Promise<Response> {
     const stream = await client.chat.completions.create({
       model: parsed.model ?? 'gpt-5',
       temperature: 0.2,
-      messages: parsed.messages as unknown[], // already validated as array
+      messages, // now correctly typed
       stream: true,
     });
 
