@@ -154,7 +154,7 @@ export default function ChatReplicaPage() {
                             void handleSend();
                           }
                         }}
-                        placeholder="Message ChatGPT…  Try /draft, /intake, /find"
+                        // placeholder="Message LawFuze  Try /draft, /intake, /find"
                         className="flex-1 resize-none bg-transparent outline-none px-2 py-2 sm:px-3 sm:py-2 max-h-60 leading-relaxed placeholder:text-muted-foreground/70 text-base sm:text-[15px]"
                       />
 
