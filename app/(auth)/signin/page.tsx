@@ -12,9 +12,20 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, Eye, EyeOff, LoaderCircle as LoaderCircleIcon, MailPlus } from 'lucide-react';
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  LoaderCircle as LoaderCircleIcon,
+  MailPlus,
+} from 'lucide-react';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Alert, AlertIcon, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -24,8 +35,44 @@ import { Icons } from '@/components/common/icons';
 import { getSigninSchema, SigninSchemaType } from '../forms/signin-schema';
 
 /* ──────────────────────────────────────────────────────────────────────────
+   Small helpers (types + safe JSON)
+   -------------------------------------------------------------------------- */
+
+type Busy = 'idle' | 'email' | 'google';
+
+type ApiOk = {
+  access_token?: string;
+  token_type?: string;
+};
+
+type ApiErr = {
+  code?: string;
+  detail?: string;
+  message?: string;
+  email?: string;
+};
+
+type ApiJson = Partial<ApiOk & ApiErr>;
+type JsonObject = Record<string, unknown>;
+
+function isJsonObject(v: unknown): v is JsonObject {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+async function safeJson(resp: Response): Promise<ApiJson> {
+  try {
+    const parsed = (await resp.json()) as unknown;
+    if (isJsonObject(parsed)) return parsed as ApiJson;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
    GIS helpers (FedCM-safe) + OAuth popup fallback
    -------------------------------------------------------------------------- */
+
 let gisInited = false;
 let promptInFlight = false;
 let cancelPrompt: (() => void) | null = null;
@@ -39,7 +86,8 @@ function loadGsi(): Promise<typeof google> {
     s.src = 'https://accounts.google.com/gsi/client';
     s.async = true;
     s.defer = true;
-    s.onload = () => resolve((window as Window & { google?: typeof google }).google as typeof google);
+    s.onload = () =>
+      resolve((window as Window & { google?: typeof google }).google as typeof google);
     s.onerror = () => reject(new Error('Failed to load Google script'));
     document.head.appendChild(s);
   });
@@ -83,12 +131,22 @@ async function initGsi(
 
 function promptOnce(onIssue?: (msg: string) => void) {
   const g = window.google;
-  if (!g?.accounts?.id) return onIssue?.('Google Sign-In not initialized yet.');
-  if (promptInFlight) return onIssue?.('Sign-in already in progress.');
+  if (!g?.accounts?.id) {
+    onIssue?.('Google Sign-In not initialized yet.');
+    return;
+  }
+  if (promptInFlight) {
+    onIssue?.('Sign-in already in progress.');
+    return;
+  }
 
   promptInFlight = true;
   cancelPrompt = () => {
-    try { g.accounts.id.cancel(); } catch { }
+    try {
+      g.accounts.id.cancel();
+    } catch {
+      /* noop */
+    }
     promptInFlight = false;
     cancelPrompt = null;
   };
@@ -100,8 +158,13 @@ function promptOnce(onIssue?: (msg: string) => void) {
       const reason = n.getNotDisplayedReason?.() || 'unknown';
       // Fallback to popup when One Tap can't show
       if (reason === 'opt_out_or_no_session' || reason === 'unknown_reason') {
-        try { codeClient?.requestCode(); return; }
-        catch { onIssue?.(`Google popup could not start. (${reason})`); return; }
+        try {
+          codeClient?.requestCode();
+          return;
+        } catch {
+          onIssue?.(`Google popup could not start. (${reason})`);
+          return;
+        }
       }
       onIssue?.(`Prompt not displayed: ${reason}`);
     }
@@ -124,14 +187,22 @@ function TopActivityBar({ active }: { active: boolean }) {
   return (
     <div
       aria-hidden
-      className={`fixed left-0 top-0 z-[90] h-0.5 w-full overflow-hidden transition-opacity duration-200 ${active ? 'opacity-100' : 'opacity-0'}`}
+      className={`fixed left-0 top-0 z-[90] h-0.5 w-full overflow-hidden transition-opacity duration-200 ${
+        active ? 'opacity-100' : 'opacity-0'
+      }`}
     >
       <div className="h-full w-[40%] translate-x-[-100%] animate-[activity_1.4s_ease-in-out_infinite] bg-primary" />
       <style jsx>{`
         @keyframes activity {
-          0% { transform: translateX(-100%); }
-          50% { transform: translateX(120%); }
-          100% { transform: translateX(250%); }
+          0% {
+            transform: translateX(-100%);
+          }
+          50% {
+            transform: translateX(120%);
+          }
+          100% {
+            transform: translateX(250%);
+          }
         }
       `}</style>
     </div>
@@ -140,12 +211,15 @@ function TopActivityBar({ active }: { active: boolean }) {
 
 function PageLock({ active }: { active: boolean }) {
   if (!active) return null;
-  return <div aria-hidden className="fixed inset-0 z-[70] bg-background/35 backdrop-blur-[1px] pointer-events-auto" />;
+  return (
+    <div
+      aria-hidden
+      className="fixed inset-0 z-[70] bg-background/35 backdrop-blur-[1px] pointer-events-auto"
+    />
+  );
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
-
-type Busy = 'idle' | 'email' | 'google';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -192,15 +266,17 @@ export default function SignInPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id_token: idToken }),
               });
-              const data: { access_token?: string; detail?: string; message?: string } =
-                await resp.json().catch(() => ({} as Record<string, unknown>));
-              if (!resp.ok || !data?.access_token) throw new Error(data?.detail || data?.message || 'Google sign-in failed');
+              const data = await safeJson(resp);
+              if (!resp.ok || !data.access_token) {
+                throw new Error(data.detail || data.message || 'Google sign-in failed');
+              }
               localStorage.setItem('lf_token', data.access_token);
               const ok = await loginWithGoogleIdToken(idToken);
               if (!ok) throw new Error('Google sign-in failed');
-              router.replace('/'); router.refresh();
-            } catch (e: any) {
-              setError(e?.message || 'Google sign-in failed');
+              router.replace('/');
+              router.refresh();
+            } catch (e: unknown) {
+              setError(e instanceof Error ? e.message : 'Google sign-in failed');
             } finally {
               setBusy('idle');
             }
@@ -213,24 +289,35 @@ export default function SignInPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code }),
               });
-              const data: { access_token?: string; detail?: string; message?: string } =
-                await resp.json().catch(() => ({} as Record<string, unknown>));
-              if (!resp.ok || !data?.access_token) throw new Error(data?.detail || data?.message || 'Google popup sign-in failed');
+              const data = await safeJson(resp);
+              if (!resp.ok || !data.access_token) {
+                throw new Error(data.detail || data.message || 'Google popup sign-in failed');
+              }
               localStorage.setItem('lf_token', data.access_token);
-              router.replace('/'); router.refresh();
-            } catch (e: any) {
-              setError(e?.message || 'Google popup sign-in failed');
+              router.replace('/');
+              router.refresh();
+            } catch (e: unknown) {
+              setError(
+                e instanceof Error ? e.message : 'Google popup sign-in failed',
+              );
             } finally {
               setBusy('idle');
             }
-          }
+          },
         );
         if (alive) setGsiReady(true);
-      } catch (e: any) {
-        if (alive) setError(e?.message || 'Failed to initialize Google Sign-In');
+      } catch (e: unknown) {
+        if (alive) {
+          setError(
+            e instanceof Error ? e.message : 'Failed to initialize Google Sign-In',
+          );
+        }
       }
     })();
-    return () => { alive = false; if (cancelPrompt) cancelPrompt(); };
+    return () => {
+      alive = false;
+      if (cancelPrompt) cancelPrompt();
+    };
   }, [googleClientId, loginWithGoogleIdToken, router]);
 
   // Email/password submit
@@ -252,25 +339,26 @@ export default function SignInPage() {
       });
 
       if (resp.ok) {
-        // Rare: provider failed but API succeeded — accept token and move on
-        const data = await resp.json().catch(() => ({} as any));
-        if (data?.access_token) {
+        const data = await safeJson(resp);
+        if (data.access_token) {
           localStorage.setItem('lf_token', data.access_token);
-          router.replace('/'); router.refresh();
+          router.replace('/');
+          router.refresh();
           return;
         }
       } else {
-        const err = await resp.json().catch(() => ({} as any));
+        const err = await safeJson(resp);
 
-        // ── Normalize "email not verified" no matter how backend formats it
-        const raw =
-          (err?.code ?? err?.detail ?? err?.message ?? '').toString().toUpperCase();
+        // Normalize "email not verified"
+        const raw = String(
+          err.code ?? err.detail ?? err.message ?? '',
+        ).toUpperCase();
         const isUnverified =
           resp.status === 403 &&
           (raw === 'EMAIL_UNVERIFIED' || raw === 'EMAIL_NOT_VERIFIED');
 
         if (isUnverified) {
-          setUnverifiedEmail(err?.email || values.email);
+          setUnverifiedEmail(err.email || values.email);
           setError('Your email isn’t verified yet.');
           return;
         }
@@ -280,13 +368,17 @@ export default function SignInPage() {
           return;
         }
 
-        setError(err?.message || 'Sign-in failed. Please try again.');
+        setError(err.message || 'Sign-in failed. Please try again.');
         return;
       }
 
       setError('Invalid credentials. Please try again.');
-    } catch (err: any) {
-      setError(err?.message || 'An unexpected error occurred. Please try again.');
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred. Please try again.',
+      );
     } finally {
       setBusy('idle');
     }
@@ -303,7 +395,11 @@ export default function SignInPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: unverifiedEmail }),
       });
-      try { localStorage.setItem('pendingEmail', unverifiedEmail); } catch { }
+      try {
+        localStorage.setItem('pendingEmail', unverifiedEmail);
+      } catch {
+        /* ignore */
+      }
       setNotice(`We’ve sent a new verification link to ${unverifiedEmail}.`);
     } catch {
       setError('Could not resend email. Please try again.');
@@ -315,10 +411,19 @@ export default function SignInPage() {
   // Google sign-in
   const handleGoogleSignIn = () => {
     setError(null);
-    if (!googleClientId) return setError('Google sign-in not configured.');
-    if (!gsiReady) return setError('Still preparing Google Sign-In. Try again in a moment.');
+    if (!googleClientId) {
+      setError('Google sign-in not configured.');
+      return;
+    }
+    if (!gsiReady) {
+      setError('Still preparing Google Sign-In. Try again in a moment.');
+      return;
+    }
     setBusy('google');
-    promptOnce((msg) => { setBusy('idle'); setError(msg); });
+    promptOnce((msg) => {
+      setBusy('idle');
+      if (msg) setError(msg);
+    });
   };
 
   return (
@@ -327,10 +432,15 @@ export default function SignInPage() {
       <PageLock active={isBusy} />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="relative block w-full space-y-5">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="relative block w-full space-y-5"
+        >
           {/* Header */}
           <div className="space-y-1.5 pb-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">Sign in to LawFuze</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-center">
+              Sign in to LawFuze
+            </h1>
           </div>
 
           {/* Google */}
@@ -353,14 +463,26 @@ export default function SignInPage() {
                 <Icons.googleColorful className="size-5! opacity-100!" aria-hidden />
               )}
               <span className="ms-2">
-                {busy === 'google' ? 'Connecting to Google…' : gsiReady ? 'Sign in with Google' : 'Preparing…'}
+                {busy === 'google'
+                  ? 'Connecting to Google…'
+                  : gsiReady
+                  ? 'Sign in with Google'
+                  : 'Preparing…'}
               </span>
             </Button>
 
             {busy === 'google' ? (
               <div className="flex items-center justify-between text-sm">
                 <p className="text-foreground">Waiting for Google One Tap…</p>
-                <Button type="button" variant="ghost" size="sm" onClick={() => { cancelPrompt?.(); setBusy('idle'); }}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    cancelPrompt?.();
+                    setBusy('idle');
+                  }}
+                >
                   Cancel
                 </Button>
               </div>
@@ -369,42 +491,46 @@ export default function SignInPage() {
 
           {/* Divider */}
           <div className="relative py-1.5">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">or</span>
             </div>
           </div>
 
           {/* Error / Notice */}
-{error && (
-  <Alert
-    variant="destructive"
-    className="border-destructive/30 bg-destructive/15 text-destructive-foreground"
-    onClose={() => setError(null)}
-  >
-    <AlertIcon><AlertCircle /></AlertIcon>
-    <div className="w-full">
-      <AlertTitle className="font-semibold text-center">{error}</AlertTitle>
+          {error && (
+            <Alert
+              variant="destructive"
+              className="border-destructive/30 bg-destructive/15 text-destructive-foreground"
+              onClose={() => setError(null)}
+            >
+              <AlertIcon>
+                <AlertCircle />
+              </AlertIcon>
+              <div className="w-full">
+                <AlertTitle className="font-semibold text-center">
+                  {error}
+                </AlertTitle>
 
-      {unverifiedEmail && (
-        <div className="mt-3 flex justify-center">
-          <Button
-            onClick={resend}
-            disabled={resending}
-            variant="outline"
-            className="gap-2 w-full max-w-[360px] justify-center border-white/20 bg-white/10 text-white hover:bg-white/15"
-            size="lg"
-          >
-            {resending ? <InlineSpinner /> : <MailPlus className="h-4 w-4" />}
-            {resending ? 'Sending…' : 'Resend verification email'}
-          </Button>
-        </div>
-      )}
-    </div>
-  </Alert>
-)}
-
-
+                {unverifiedEmail && (
+                  <div className="mt-3 flex justify-center">
+                    <Button
+                      onClick={resend}
+                      disabled={resending}
+                      variant="outline"
+                      className="gap-2 w-full max-w-[360px] justify-center border-white/20 bg-white/10 text-white hover:bg-white/15"
+                      size="lg"
+                    >
+                      {resending ? <InlineSpinner /> : <MailPlus className="h-4 w-4" />}
+                      {resending ? 'Sending…' : 'Resend verification email'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Alert>
+          )}
 
           {notice && (
             <p className="text-sm text-muted-foreground text-center">
@@ -450,7 +576,10 @@ export default function SignInPage() {
               <FormItem>
                 <div className="flex justify-between items-center gap-2.5">
                   <FormLabel>Password</FormLabel>
-                  <Link href="/reset-password" className="text-sm font-semibold text-foreground hover:text-primary">
+                  <Link
+                    href="/reset-password"
+                    className="text-sm font-semibold text-foreground hover:text-primary"
+                  >
                     Forgot Password?
                   </Link>
                 </div>
@@ -475,7 +604,11 @@ export default function SignInPage() {
                     aria-label={passwordVisible ? 'Hide password' : 'Show password'}
                     disabled={isBusy && busy !== 'google'}
                   >
-                    {passwordVisible ? <EyeOff className="text-muted-foreground" /> : <Eye className="text-muted-foreground" />}
+                    {passwordVisible ? (
+                      <EyeOff className="text-muted-foreground" />
+                    ) : (
+                      <Eye className="text-muted-foreground" />
+                    )}
                   </Button>
                 </div>
 
@@ -497,7 +630,10 @@ export default function SignInPage() {
                     onCheckedChange={(c) => field.onChange(!!c)}
                     disabled={isBusy && busy !== 'google'}
                   />
-                  <label htmlFor="remember-me" className="text-sm leading-none text-muted-foreground">
+                  <label
+                    htmlFor="remember-me"
+                    className="text-sm leading-none text-muted-foreground"
+                  >
                     Remember me
                   </label>
                 </>
@@ -521,7 +657,10 @@ export default function SignInPage() {
           {/* Footer */}
           <p className="text-sm text-muted-foreground text-center">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-sm font-semibold text-foreground hover:text-primary">
+            <Link
+              href="/signup"
+              className="text-sm font-semibold text-foreground hover:text-primary"
+            >
               Sign Up
             </Link>
           </p>

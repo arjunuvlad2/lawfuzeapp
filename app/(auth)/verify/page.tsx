@@ -9,6 +9,34 @@ import Logo from '../../components/brand/Logo';
 
 type Phase = 'verifying' | 'sending' | 'sent' | 'info' | 'success' | 'error';
 
+/* ── tiny helpers (typed, no any) ───────────────────────────────────────── */
+
+type JsonObject = Record<string, unknown>;
+
+function isJsonObject(v: unknown): v is JsonObject {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+/** Safely parse JSON from a Response (only when content-type is JSON). */
+async function safeJson(resp: Response): Promise<JsonObject | null> {
+  try {
+    const ct = resp.headers.get('content-type') ?? '';
+    if (!ct.includes('application/json')) return null;
+    const parsed = (await resp.json()) as unknown;
+    return isJsonObject(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function pickString(obj: unknown, key: string): string | undefined {
+  if (isJsonObject(obj)) {
+    const v = obj[key];
+    if (typeof v === 'string') return v;
+  }
+  return undefined;
+}
+
 function CardShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-5 relative mx-auto w-[min(92vw,820px)] rounded-3xl border border-white/10 bg-white/5 p-10 sm:p-12 backdrop-blur-xl shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
@@ -18,7 +46,6 @@ function CardShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* --- Optional fallback to avoid blank flash while searchParams hydrates --- */
 function VerifyFallback() {
   return (
     <CardShell>
@@ -48,7 +75,6 @@ function VerifyInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // compute email once, synchronously, to set the initial phase correctly
   const email = useMemo(() => {
     const fromUrl = searchParams?.get('email') || undefined;
     if (fromUrl) return fromUrl;
@@ -56,7 +82,6 @@ function VerifyInner() {
     return undefined;
   }, [searchParams]);
 
-  // set initial phase without showing "Verifying…" unless there's a token
   const [phase, setPhase] = useState<Phase>(() => {
     const token = searchParams?.get('token') || searchParams?.get('t');
     if (token) return 'verifying';
@@ -76,6 +101,7 @@ function VerifyInner() {
       try {
         setPhase('verifying');
         setNote('Verifying your email…');
+
         const res = await fetch('/api/auth/verify-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -90,8 +116,9 @@ function VerifyInner() {
           return;
         }
 
-        const data = await res.json().catch(() => ({} as any));
-        const detail = typeof data?.detail === 'string' ? data.detail : undefined;
+        const data = await safeJson(res);
+        const detail = pickString(data, 'detail');
+        const msg = pickString(data, 'message');
 
         if (detail === 'TOKEN_EXPIRED') {
           setPhase('error');
@@ -101,7 +128,7 @@ function VerifyInner() {
           setNote('Invalid verification link. You can request a fresh one below.');
         } else {
           setPhase('error');
-          setNote(data?.message || 'Verification failed. Please try again.');
+          setNote(msg || 'Verification failed. Please try again.');
         }
       } catch {
         setPhase('error');
@@ -131,20 +158,17 @@ function VerifyInner() {
     }
   }, [email, cooldown]);
 
-  // cooldown tick
   useEffect(() => {
     if (cooldown <= 0) return;
     const id = setInterval(() => setCooldown((s) => s - 1), 1000);
     return () => clearInterval(id);
   }, [cooldown]);
 
-  // kick off verification if token provided
   useEffect(() => {
     const token = searchParams?.get('token') || searchParams?.get('t');
     if (token) verify(token);
   }, [searchParams, verify]);
 
-  // simple icon map
   const { Icon, tint } = (() => {
     switch (phase) {
       case 'success': return { Icon: MailCheck, tint: 'text-emerald-400' };
@@ -163,11 +187,11 @@ function VerifyInner() {
         <Logo />
 
         <CardShell>
-          {/* Icon in a subtle radial disk */}
+          {/* Icon */}
           <div className="mx-auto mb-8 flex items-center justify-center">
             <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 items-center justify-center">
               <div className="absolute inset-0 rounded-full ring-1 ring-white/10 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.14),rgba(255,255,255,0.05)_58%,rgba(0,0,0,0)_60%)]" />
-              <Icon aria-hidden className={`relative h-15 w-15 sm:h-15 sm:w-15 md:h-20 md:w-20 ${tint}`} />
+              <Icon aria-hidden className={`relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 ${tint}`} />
             </div>
           </div>
 

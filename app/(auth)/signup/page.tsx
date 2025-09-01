@@ -17,7 +17,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, Check, Eye, EyeOff, LoaderCircle as LoaderCircleIcon } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, LoaderCircle as LoaderCircleIcon } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { useForm } from 'react-hook-form';
 
@@ -188,7 +188,7 @@ export default function Page() {
   const [gsiReady, setGsiReady] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<boolean | null>(false);
+
   const [showRecaptcha, setShowRecaptcha] = useState(false);
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -327,7 +327,7 @@ export default function Page() {
         localStorage.setItem('pendingEmail', values.email);
       }
       const next = `/verify?email=${encodeURIComponent(values.email)}`;
-      setSuccess(true); // optional: show success alert briefly
+
       router.push(next);
       router.refresh();
     } catch (err: unknown) {

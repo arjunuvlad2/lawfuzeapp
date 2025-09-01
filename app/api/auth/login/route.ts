@@ -3,53 +3,76 @@
  * Forwards { email, password } to FastAPI /auth/login
  * Normalizes common errors (e.g. EMAIL_UNVERIFIED).
  */
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-interface LoginBody { email: string; password: string }
-
-function parseJsonSafe(text: string): any {
-  try { return text ? JSON.parse(text) : null } catch { return null }
+interface LoginBody {
+  email: string;
+  password: string;
 }
-function str(v: unknown): string | undefined {
-  return typeof v === "string" ? v : undefined;
+
+type JsonObject = Record<string, unknown>;
+
+function isJsonObject(v: unknown): v is JsonObject {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+function parseJsonSafe(text: string): JsonObject | null {
+  try {
+    const v = text ? (JSON.parse(text) as unknown) : null;
+    return isJsonObject(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function pickString(obj: unknown, key: string): string | undefined {
+  if (isJsonObject(obj)) {
+    const v = obj[key];
+    if (typeof v === 'string') return v;
+  }
+  return undefined;
 }
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
     const body = (await req.json().catch(() => null)) as Partial<LoginBody> | null;
     if (!body?.email || !body?.password) {
-      return NextResponse.json({ message: "Invalid body" }, { status: 400 });
+      return NextResponse.json({ message: 'Invalid body' }, { status: 400 });
     }
 
-    const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
+    const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
     if (!API_BASE) {
-      return NextResponse.json({ message: "NEXT_PUBLIC_API_URL is not set" }, { status: 500 });
+      return NextResponse.json(
+        { message: 'NEXT_PUBLIC_API_URL is not set' },
+        { status: 500 },
+      );
     }
 
     const upstream = await fetch(`${API_BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: body.email, password: body.password }),
     });
 
-    const ct = upstream.headers.get("content-type") || "";
+    const ct = upstream.headers.get('content-type') || '';
     const raw = await upstream.text();
-    const data = ct.includes("application/json") ? parseJsonSafe(raw) : null;
-    const detail = str(data?.detail) ?? str(data?.message);
+    const data = ct.includes('application/json') ? parseJsonSafe(raw) : null;
+
+    const detail = pickString(data, 'detail') ?? pickString(data, 'message');
 
     // ── Friendly normalization ──────────────────────────────────────────────
     if (!upstream.ok) {
       // Unverified email (support both spellings)
       const isUnverified =
         upstream.status === 403 &&
-        (detail === "EMAIL_UNVERIFIED" || detail === "EMAIL_NOT_VERIFIED");
+        (detail === 'EMAIL_UNVERIFIED' || detail === 'EMAIL_NOT_VERIFIED');
 
       if (isUnverified) {
         return NextResponse.json(
           {
-            code: "EMAIL_UNVERIFIED",
+            code: 'EMAIL_UNVERIFIED',
             email: body.email,
-            message: "Email not verified",
+            message: 'Email not verified',
           },
           { status: 403 },
         );
@@ -58,7 +81,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       // Invalid credentials
       if (upstream.status === 401) {
         return NextResponse.json(
-          { message: "Invalid credentials. Please try again." },
+          { message: 'Invalid credentials. Please try again.' },
           { status: 401 },
         );
       }
@@ -70,13 +93,11 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    // Success: pass-through JSON
+    // Success: pass-through JSON (still parsed safely)
     const okJson = data ?? parseJsonSafe(raw) ?? {};
     return NextResponse.json(okJson, { status: 200 });
-  } catch (e: any) {
-    return NextResponse.json(
-      { message: e?.message || "Unexpected error" },
-      { status: 500 },
-    );
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unexpected error';
+    return NextResponse.json({ message }, { status: 500 });
   }
 }
