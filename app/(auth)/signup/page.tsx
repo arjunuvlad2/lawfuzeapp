@@ -5,9 +5,6 @@
  * ----------------------
  * - Email/password + reCAPTCHA -> /api/auth/signup
  * - Google Sign-Up/In via GIS (FedCM-friendly) -> /api/auth/callback/google
- *   • initialize once
- *   • prompt exactly once per click
- *   • cancel on unmount to avoid AbortError spam
  */
 
 declare global {
@@ -216,7 +213,6 @@ export default function Page() {
     }
   }, [status, router]);
 
-
   // Initialize GIS once and register handlers
   useEffect(() => {
     let alive = true;
@@ -326,8 +322,14 @@ export default function Page() {
         return;
       }
 
-      // If backend sends verification email first:
-      setSuccess(true);
+      // ✅ After successful signup: remember email and go to /verify
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pendingEmail', values.email);
+      }
+      const next = `/verify?email=${encodeURIComponent(values.email)}`;
+      setSuccess(true); // optional: show success alert briefly
+      router.push(next);
+      router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unexpected error. Please try again.');
     } finally {
@@ -353,22 +355,7 @@ export default function Page() {
     });
   };
 
-  if (success) {
-    return (
-      <Alert onClose={() => setSuccess(false)}>
-        <AlertIcon>
-          <Check />
-        </AlertIcon>
-        <AlertTitle>
-          You have successfully signed up! Please check your email to verify your account and then{' '}
-          <Link href="/signin/" className="text-primary hover:text-primary/80">
-            Log in
-          </Link>
-          .
-        </AlertTitle>
-      </Alert>
-    );
-  }
+ 
 
   return (
     <Suspense>
@@ -390,7 +377,6 @@ export default function Page() {
               variant="outline"
               type="button"
               onClick={handleGoogleSignup}
-              // keep contrast: don't disable during google busy
               disabled={busy === 'email' || !gsiReady}
               aria-disabled={busy === 'email' || !gsiReady}
               aria-busy={busy === 'google'}
@@ -400,7 +386,6 @@ export default function Page() {
               ].join(' ')}
               title={!gsiReady ? 'Preparing Google Sign-In…' : 'Sign up with Google'}
             >
-              {/* shimmer progress when google busy */}
               {busy === 'google' && (
                 <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
                   <span className="absolute inset-y-0 -left-full w-1/2 translate-x-0 animate-[shimmer_1.4s_ease_infinite] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
