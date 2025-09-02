@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
-type InBody = { email?: string };
+type InBody = { email: string };
+type UpstreamJson = { message?: string };
 
 export async function POST(req: Request): Promise<NextResponse> {
   // 1) Validate body
-  const body = (await req.json().catch(() => null)) as InBody | null;
+  const body = (await req.json().catch(() => null)) as Partial<InBody> | null;
   if (!body?.email || typeof body.email !== "string") {
     return NextResponse.json({ message: "Invalid body" }, { status: 400 });
   }
@@ -30,18 +31,19 @@ export async function POST(req: Request): Promise<NextResponse> {
       signal: ac.signal,
     });
 
-    const data = await resp.json().catch(() => ({}));
+    const data = (await resp.json().catch(() => ({}))) as UpstreamJson;
 
     return NextResponse.json(
       {
         message:
-          data?.message ??
+          data.message ??
           "If the email exists, we’ll send a reset link shortly.",
       },
       { status: resp.status || 202 }
     );
-  } catch (e: any) {
-    const message = e?.name === "AbortError" ? "Upstream timeout" : "Network error";
+  } catch (err: unknown) {
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    const message = isAbort ? "Upstream timeout" : "Network error";
     return NextResponse.json({ message }, { status: 504 });
   } finally {
     clearTimeout(t);
