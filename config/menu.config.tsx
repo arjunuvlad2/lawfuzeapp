@@ -65,368 +65,99 @@ import {
 import { type MenuConfig } from './types';
 
 export const MENU_SIDEBAR: MenuConfig = [
-  {
-    title: 'New Chat',
-    icon: SquarePenIcon,
-    path: '/chat',
-    disabled:true
-  },
-  {
-    title: 'Search Chats',
-    icon: SearchIcon,
-    disabled: true
-  },
-  {
-    title: 'Library',
-    icon: ImagesIcon,
-    disabled: true
-  },
+  
+  
+  { heading: 'Work' },
+  { title: 'New Chat', icon: SquarePenIcon, path: '/app/chat' },
+  { title: 'Search', icon: SearchIcon, path: '/app/search' },
+  { title: 'Library', icon: ImagesIcon, path: '/app/library' },
+
   { separator: true },
+  { heading: 'Cases' },
+  { title: 'New Case', icon: FolderPlus, path: '/app/matters/new' },
   {
-    title: 'New Case',
-    icon: FolderPlus,
-    disabled: true
-  },
-  {
-    title: 'Ops & Collaborationer',
-    icon: Settings2Icon,
+    title: 'Cases',
+    icon: Briefcase,
+    path: '/app/matters',
     children: [
-      { title: 'Review Queue', icon: Inbox, path: '/review-queue' },
-      { title: 'Tasks', icon: ListTodo, path: '/tasks' },
-      { title: 'Calendar', icon: Calendar, path: '/calendar' },
-      { title: 'Notifications', icon: Bell, path: '/notifications' },
-    ]
-  },
-  {
-    title: 'Analytics',
-    icon: BarChartIcon,
-    children: [
-      { title: 'Court Analytics', icon: BarChart, path: '/analytics/courts' }
-    ]
-  },
-  { heading: 'User' },
-  {
-    title: 'Public Profile',
-    icon: UserCircle,
-    children: [
-      {
-        title: 'Profiles',
-        children: [
-          { title: 'Default', path: '/public-profile/profiles/default' },
-          { title: 'Creator', path: '/public-profile/profiles/creator' },
-          { title: 'Company', path: '/public-profile/profiles/company' },
-          { title: 'NFT', path: '/public-profile/profiles/nft' },
-          { title: 'Blogger', path: '/public-profile/profiles/blogger' },
-          { title: 'CRM', path: '/public-profile/profiles/crm' },
-          {
-            title: 'More',
-            collapse: true,
-            collapseTitle: 'Show less',
-            expandTitle: 'Show 4 more',
-            children: [
-              { title: 'Gamer', path: '/public-profile/profiles/gamer' },
-              { title: 'Feeds', path: '/public-profile/profiles/feeds' },
-              { title: 'Plain', path: '/public-profile/profiles/plain' },
-              { title: 'Modal', path: '/public-profile/profiles/modal' },
-            ],
-          },
-        ],
-      },
-      {
-        title: 'Projects',
-        children: [
-          { title: '3 Columns', path: '/public-profile/projects/3-columns' },
-          { title: '2 Columns', path: '/public-profile/projects/2-columns' },
-        ],
-      },
-      { title: 'Works', path: '/public-profile/works' },
-      { title: 'Teams', path: '/public-profile/teams' },
-      { title: 'Network', path: '/public-profile/network' },
-      { title: 'Activity', path: '/public-profile/activity' },
-      {
-        title: 'More',
-        collapse: true,
-        collapseTitle: 'Show less',
-        expandTitle: 'Show 3 more',
-        children: [
-          { title: 'Campaigns - Card', path: '/public-profile/campaigns/card' },
-          { title: 'Campaigns - List', path: '/public-profile/campaigns/list' },
-          { title: 'Empty', path: '/public-profile/empty' },
-        ],
-      },
+      { title: 'Overview', path: '/app/matters/:id/overview' },
+      { title: 'Documents', path: '/app/matters/:id/documents' },
+      { title: 'Tasks', path: '/app/matters/:id/tasks' },
+      { title: 'Timeline', path: '/app/matters/:id/timeline' },
+      { title: 'Audit', path: '/app/matters/:id/audit' },
     ],
   },
   {
-    title: 'My Account',
-    icon: Settings,
+    title: 'Documents',
+    icon: FileText,
+    path: '/app/documents',
     children: [
-      {
-        title: 'Account',
-        children: [
-          { title: 'Get Started', path: '/account/home/get-started' },
-          { title: 'User Profile', path: '/account/home/user-profile' },
-          { title: 'Company Profile', path: '/account/home/company-profile' },
-          {
-            title: 'Settings - With Sidebar',
-            path: '/account/home/settings-sidebar',
-          },
-          {
-            title: 'Settings - Enterprise',
-            path: '/account/home/settings-enterprise',
-          },
-          { title: 'Settings - Plain', path: '/account/home/settings-plain' },
-          { title: 'Settings - Modal', path: '/account/home/settings-modal' },
-        ],
-      },
-      {
-        title: 'Billing',
-        children: [
-          { title: 'Billing - Basic', path: '/account/billing/basic' },
-          {
-            title: 'Billing - Enterprise',
-            path: '/account/billing/enterprise',
-          },
-          { title: 'Plans', path: '/account/billing/plans' },
-          { title: 'Billing History', path: '/account/billing/history' },
-        ],
-      },
-      {
-        title: 'Security',
-        children: [
-          { title: 'Get Started', path: '/account/security/get-started' },
-          { title: 'Security Overview', path: '/account/security/overview' },
-          {
-            title: 'Allowed IP Addresses',
-            path: '/account/security/allowed-ip-addresses',
-          },
-          {
-            title: 'Privacy Settings',
-            path: '/account/security/privacy-settings',
-          },
-          {
-            title: 'Device Management',
-            path: '/account/security/device-management',
-          },
-          {
-            title: 'Backup & Recovery',
-            path: '/account/security/backup-and-recovery',
-          },
-          {
-            title: 'Current Sessions',
-            path: '/account/security/current-sessions',
-          },
-          { title: 'Security Log', path: '/account/security/security-log' },
-        ],
-      },
-      {
-        title: 'Members & Roles',
-        children: [
-          { title: 'Teams Starter', path: '/account/members/team-starter' },
-          { title: 'Teams', path: '/account/members/teams' },
-          { title: 'Team Info', path: '/account/members/team-info' },
-          {
-            title: 'Members Starter',
-            path: '/account/members/members-starter',
-          },
-          { title: 'Team Members', path: '/account/members/team-members' },
-          { title: 'Import Members', path: '/account/members/import-members' },
-          { title: 'Roles', path: '/account/members/roles' },
-          {
-            title: 'Permissions - Toggler',
-            path: '/account/members/permissions-toggle',
-          },
-          {
-            title: 'Permissions - Check',
-            path: '/account/members/permissions-check',
-          },
-        ],
-      },
-      { title: 'Integrations', path: '/account/integrations' },
-      { title: 'Notifications', path: '/account/notifications' },
-      { title: 'API Keys', path: '/account/api-keys' },
-      {
-        title: 'More',
-        collapse: true,
-        collapseTitle: 'Show less',
-        expandTitle: 'Show 3 more',
-        children: [
-          { title: 'Appearance', path: '/account/appearance' },
-          { title: 'Invite a Friend', path: '/account/invite-a-friend' },
-          { title: 'Activity', path: '/account/activity' },
-        ],
-      },
+      { title: 'Upload', path: '/app/documents/upload' },
+      { title: 'All Documents', path: '/app/documents' },
+      { title: 'Versions', path: '/app/documents/versions' },
+      { title: 'Shares', path: '/app/documents/shares' },
     ],
   },
   {
-    title: 'Network',
-    icon: Users,
+    title: 'Acts & Clauses',
+    icon: ScrollText,
+    path: '/app/acts',
     children: [
-      { title: 'Get Started', path: '/network/get-started' },
-      {
-        title: 'User Cards',
-        children: [
-          { title: 'Mini Cards', path: '/network/user-cards/mini-cards' },
-          { title: 'Team Crew', path: '/network/user-cards/team-crew' },
-          { title: 'Author', path: '/network/user-cards/author' },
-          { title: 'NFT', path: '/network/user-cards/nft' },
-          { title: 'Social', path: '/network/user-cards/social' },
-        ],
-      },
-      {
-        title: 'User Table',
-        children: [
-          { title: 'Team Crew', path: '/network/user-table/team-crew' },
-          { title: 'App Roster', path: '/network/user-table/app-roster' },
-          {
-            title: 'Market Authors',
-            path: '/network/user-table/market-authors',
-          },
-          { title: 'SaaS Users', path: '/network/user-table/saas-users' },
-          { title: 'Store Clients', path: '/network/user-table/store-clients' },
-          { title: 'Visitors', path: '/network/user-table/visitors' },
-        ],
-      },
-      { title: 'Cooperations', path: '/network/cooperations', disabled: true },
-      { title: 'Leads', path: '/network/leads', disabled: true },
-      { title: 'Donators', path: '/network/donators', disabled: true },
+      { title: 'Statute Navigator', path: '/app/acts/navigator' },
+      { title: 'Clause Compare', path: '/app/clauses/compare' },
+      { title: 'OSCOLA Export', path: '/app/acts/oscola' },
     ],
   },
   {
-    title: 'Authentication',
-    icon: Shield,
+    title: 'Templates',
+    icon: Layout,
+    path: '/app/templates',
     children: [
-      {
-        title: 'Sign In',
-        path: '/signin',
-      },
-      {
-        title: 'Check Email',
-        path: '/signup',
-      },
-      {
-        title: 'Reset Password',
-        path: '/reset-password',
-      },
-      {
-        title: '2FA',
-        path: '/2fa',
-      },
-      { title: 'Welcome Message', path: '/auth/welcome-message' },
-      { title: 'Account Deactivated', path: '/auth/account-deactivated' },
-      { title: 'Error 404', path: '/error/404' },
-      { title: 'Error 500', path: '/error/500' },
+      { title: 'Document Templates', path: '/app/templates/documents' },
+      { title: 'Prompt Library', path: '/app/templates/prompts' },
+      { title: 'Governance', path: '/app/templates/governance' },
     ],
   },
-  // { heading: 'Apps' },
-  // {
-  //   title: 'User Management',
-  //   icon: ShieldUser,
-  //   children: [
-  //     {
-  //       title: 'Users',
-  //       path: '/user-management/users',
-  //     },
-  //     {
-  //       title: 'Roles',
-  //       path: '/user-management/roles',
-  //     },
-  //     {
-  //       title: 'Permissions',
-  //       path: '/user-management/permissions',
-  //     },
-  //     {
-  //       title: 'Account',
-  //       path: '/user-management/account',
-  //     },
-  //     {
-  //       title: 'Logs',
-  //       path: '/user-management/logs',
-  //     },
-  //     {
-  //       title: 'Settings',
-  //       path: '/user-management/settings',
-  //     },
-  //   ],
-  // },
-//   {
-//     title: 'Store - Client',
-//     icon: Users,
-//     children: [
-//       { title: 'Home', path: '/store-client/home' },
-//       {
-//         title: 'Search Results - Grid',
-//         path: '/store-client/search-results-grid',
-//       },
-//       {
-//         title: 'Search Results - List',
-//         path: '/store-client/search-results-list',
-//       },
-//       { title: 'Product Details', path: '/store-client/product-details' },
-//       { title: 'Wishlist', path: '/store-client/wishlist' },
-//       {
-//         title: 'Checkout',
-//         children: [
-//           {
-//             title: 'Order Summary',
-//             path: '/store-client/checkout/order-summary',
-//           },
-//           {
-//             title: 'Shipping Info',
-//             path: '/store-client/checkout/shipping-info',
-//           },
-//           {
-//             title: 'Payment Method',
-//             path: '/store-client/checkout/payment-method',
-//           },
-//           {
-//             title: 'Order Placed',
-//             path: '/store-client/checkout/order-placed',
-//           },
-//         ],
-//       },
-//       { title: 'My Orders', path: '/store-client/my-orders' },
-//       { title: 'Order Receipt', path: '/store-client/order-receipt' },
-//     ],
-//   },
-//   {
-//     title: 'Store - Admin',
-//     icon: Bolt,
-//     disabled: true,
-//     children: [
-//       { title: 'Dashboard', path: '/store-admin/dashboard' },
-//       {
-//         title: 'Inventory',
-//         children: [
-//           {
-//             title: 'All Products',
-//             path: '/store-admin/inventory/all-products',
-//           },
-//           {
-//             title: 'Current Stock',
-//             path: '/store-admin/inventory/current-stock',
-//           },
-//           {
-//             title: 'Inbound Stock',
-//             path: '/store-admin/inventory/inbound-stock',
-//           },
-//           {
-//             title: 'Outbound Stock',
-//             path: '/store-admin/inventory/outbound-stock',
-//           },
-//           {
-//             title: 'Stock Planner',
-//             path: '/store-admin/inventory/stock-planner',
-//           },
-//           { title: 'Track Shipping', path: '/' },
-//           { title: 'Create Shipping Label', path: '/' },
-//         ],
-//       },
-//     ],
-//   },
-//   { title: 'Store - Services', icon: Codepen, disabled: true },
-//   { title: 'AI Promt', icon: Theater, disabled: true },
-//   { title: 'Invoice Generator', icon: ScrollText, disabled: true },
+
+  { separator: true },
+  { heading: 'Ops & Collaboration' },
+  { title: 'Review Queue', icon: Inbox, path: '/app/reviews' },
+  { title: 'Tasks', icon: ListTodo, path: '/app/tasks' },
+  { title: 'Calendar', icon: Calendar, path: '/app/calendar' },
+  {
+    title: 'Messaging & E-Sign',
+    icon: MessageSquare,
+    path: '/app/messages',
+    children: [
+      { title: 'Client Messages', path: '/app/messages' },
+      { title: 'E-Sign Packages', path: '/app/esign' },
+    ],
+  },
+  { title: 'Client Intake', icon: Users, path: '/app/intakes' },
+
+  { separator: true },
+  { heading: 'Intelligence' },
+  {
+    title: 'Prediction & Insights',
+    icon: BarChart,
+    path: '/app/insights',
+    children: [
+      { title: 'Prediction Analysis', path: '/app/insights/prediction' },
+      { title: 'Checklists & Playbooks', path: '/app/insights/playbooks' },
+    ],
+  },
+  { title: 'Court Analytics', icon: BarChartIcon, path: '/app/analytics/courts' },
+  { title: 'Court Updates', icon: AlertCircle, path: '/app/updates' },
+  { title: 'Fees & Quotes', icon: Euro, path: '/app/fees' },
+
+  { separator: true },
+  { heading: 'Compliance' },
+  { title: 'Audit Trail', icon: Shield, path: '/app/audit' },
+  { title: 'Privacy Modes', icon: ShieldUser, path: '/app/privacy' },
+  { title: 'Usage & Cost', icon: TrendingUp, path: '/app/usage' },
+  { title: 'Settings', icon: Settings, path: '/app/settings' },
 ];
+
 
 export const MENU_SIDEBAR_CUSTOM: MenuConfig = [
   {
