@@ -43,8 +43,8 @@ export function Demo1LightSidebarPage() {
       <Container>
         <Toolbar>
           <ToolbarHeading
-            title="Dashboard"
-            description="Central Hub for Personal Customization"
+            title="Court & Case Analytics"
+            description="Real-time practice metrics across matters, teams, and courts"
           />
           <ToolbarActions>
             <Popover open={isOpen} onOpenChange={setIsOpen}>

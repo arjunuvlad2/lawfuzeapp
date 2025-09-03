@@ -33,28 +33,31 @@ const EntryCallout = ({ className }: IEntryCalloutProps) => {
                 { filename: '300-1.png' },
                 { filename: '300-2.png' },
                 {
-                  fallback: 'S',
-                  variant: 'text-white text-xs ring-background bg-green-500',
+                  fallback: 'LF',
+                  variant: 'text-white text-xs ring-background bg-primary',
                 },
               ]}
             />
+
             <h2 className="text-xl font-semibold text-mono">
-              Connect Today & Join <br />
+              Connect your team & join <br />
               the{' '}
               <Button mode="link" asChild className="text-xl font-semibold">
-                <Link href="#">KeenThemes Network</Link>
+                <Link href="/signup">LawFuze Workspace</Link>
               </Button>
             </h2>
+
             <p className="text-sm font-normal text-secondary-foreground leading-5.5">
-              Enhance your projects with premium themes and <br />
-              templates. Join the KeenThemes community today <br />
-              for top-quality designs and resources.
+              Invite solicitors & staff, configure HMCTS-ready templates, <br />
+              and unlock Ask • Draft • Summarise • Compare with <br />
+              audit-ready logs, role-based access, and secure sharing.
             </p>
           </div>
         </CardContent>
+
         <CardFooter className="justify-center">
           <Button mode="link" underlined="dashed" asChild>
-            <Link href="#">Get Started</Link>
+            <Link href="/onboarding">Get Started</Link>
           </Button>
         </CardFooter>
       </Card>
