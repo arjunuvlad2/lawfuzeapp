@@ -8,9 +8,6 @@ import {
   FileText,
   ShieldCheck,
   Clock,
-  Users,
-  CreditCard,
-  AlertTriangle,
 } from 'lucide-react';
 
 interface IChannelStatsItem {
