@@ -26,7 +26,7 @@ const ChannelStats = () => {
     {
       icon: BarChart3,
       info: '128',
-      desc: 'Active matters',
+      desc: 'Active Cases',
       path: '/matters',
       iconGradient: 'from-emerald-400 to-emerald-600',
     },

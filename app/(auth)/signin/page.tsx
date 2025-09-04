@@ -187,9 +187,8 @@ function TopActivityBar({ active }: { active: boolean }) {
   return (
     <div
       aria-hidden
-      className={`fixed left-0 top-0 z-[90] h-0.5 w-full overflow-hidden transition-opacity duration-200 ${
-        active ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`fixed left-0 top-0 z-[90] h-0.5 w-full overflow-hidden transition-opacity duration-200 ${active ? 'opacity-100' : 'opacity-0'
+        }`}
     >
       <div className="h-full w-[40%] translate-x-[-100%] animate-[activity_1.4s_ease-in-out_infinite] bg-primary" />
       <style jsx>{`
@@ -275,6 +274,12 @@ export default function SignInPage() {
               if (!ok) throw new Error('Google sign-in failed');
               router.replace('/');
               router.refresh();
+              // Fallback hard reload if the soft nav doesn’t work
+              setTimeout(() => {
+                if (typeof window !== 'undefined') {
+                  window.location.replace('/');
+                }
+              }, 400);
             } catch (e: unknown) {
               setError(e instanceof Error ? e.message : 'Google sign-in failed');
             } finally {
@@ -466,8 +471,8 @@ export default function SignInPage() {
                 {busy === 'google'
                   ? 'Connecting to Google…'
                   : gsiReady
-                  ? 'Sign in with Google'
-                  : 'Preparing…'}
+                    ? 'Sign in with Google'
+                    : 'Preparing…'}
               </span>
             </Button>
 

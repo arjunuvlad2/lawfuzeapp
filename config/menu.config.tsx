@@ -68,7 +68,7 @@ export const MENU_SIDEBAR: MenuConfig = [
   
   
   { heading: 'Work' },
-  { title: 'New Chat', icon: SquarePenIcon, path: '/app/chat' },
+  { title: 'New Chat', icon: SquarePenIcon, path: '/chat' },
   { title: 'Search', icon: SearchIcon, path: '/app/search' },
   { title: 'Library', icon: ImagesIcon, path: '/app/library' },
 
